@@ -2,13 +2,13 @@
 
 #### **项目介绍** : easy-video-net 是基于 golang + vue 开发的前后端分离项目,service端采用 golang + gin + gorm 进行开发 web 端采用vue3 + typescript + element-plus 进行开发
 
-**前言** 
+**前言**  
 
 项目为自己在学习golang和vue3时进行编写的学习项目可能依然存在许多问题，欢迎提lssuse，后续可能依然进行迭代，如果对你有帮助的话希望可以得到您的star
 
-体验地址 [easy-video](http://124.220.20.83:9999/)
+体验地址 [easy-video](http://easy-video.top/)
 
-**主要功能模块**
+**主要功能模块**  
 
 - **视频上传分享支持转码及弹幕功能**
 - **稿件投稿使用富文本编辑器进行简单发布**
@@ -16,7 +16,7 @@
 - **简单的消息通知 及其im功能**
 - **个人相关及其相关发布信息的CRUD**
 
-
+ 
 #### 项目环境 
 
 **service**

@@ -1,15 +1,20 @@
 package mysql
 
 import (
+	"context"
 	"easy-video-net/global/config"
 	globalLog "easy-video-net/global/logrus"
 	"fmt"
+	"github.com/sethvargo/go-retry"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"log"
+	"time"
 )
+
+var Db *gorm.DB
 
 type MyWriter struct {
 	log *logrus.Logger
@@ -21,12 +26,11 @@ func (m *MyWriter) Printf(format string, v ...interface{}) {
 }
 
 func NewMyWriter() *MyWriter {
-	log := globalLog.ReturnsInstance()
-	return &MyWriter{log: log}
+	instance := globalLog.ReturnsInstance()
+	return &MyWriter{log: instance}
 }
 
 func ReturnsInstance() *gorm.DB {
-	var err error
 	var mysqlConfig = config.Config.SqlConfig
 	//sql日志记录
 	myLogger := logger.New(
@@ -36,16 +40,25 @@ func ReturnsInstance() *gorm.DB {
 			LogLevel: logger.Error,
 		},
 	)
-	// 创建链接
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true&loc=Local", mysqlConfig.User, mysqlConfig.Password, mysqlConfig.IP, mysqlConfig.Port, mysqlConfig.Database)
-	Db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: myLogger,
-	})
-	if err != nil {
-		log.Fatalf("数据库链接错误- %v \n", err)
-	}
-	if Db.Error != nil {
-		log.Fatalf("数据库错误- %v \n", Db.Error)
+	b := retry.NewFibonacci(10 * time.Second)
+	ctx := context.Background()
+	if err := retry.Do(ctx, retry.WithMaxRetries(5, b), func(ctx context.Context) error {
+		// 创建链接
+		var err error
+		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true&loc=Local", mysqlConfig.User, mysqlConfig.Password, mysqlConfig.IP, mysqlConfig.Port, mysqlConfig.Database)
+		Db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
+			Logger: myLogger,
+		})
+		if err != nil {
+			return err
+		}
+		if Db.Error != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		// handle error
+		log.Fatalf("重连5次后依旧数据库链接错误- %v \n", err)
 	}
 	return Db
 }
